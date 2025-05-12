@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我爱梁英慧</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: "Microsoft YaHei", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            touch-action: manipulation;
+        }
+        
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        .heart-container {
+            position: relative;
+            width: 100%;
+            height: 70vh;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .heart-text {
+            position: relative;
+            font-size: 32px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 0 15px #ff2d51, 0 0 30px #ff2d51;
+            z-index: 3;
+            text-align: center;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .sub-text {
+            position: relative;
+            font-size: 20px;
+            color: rgba(255,255,255,0.8);
+            font-weight: bold;
+            text-shadow: 0 0 10px #ff2d51;
+            z-index: 3;
+            text-align: center;
+            width: 100%;
+            margin-top: 40px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px #ff2d51, 0 0 20px #ff2d51;
+            }
+            to {
+                text-shadow: 0 0 15px #ff2d51, 0 0 30px #ff2d51, 0 0 40px #ff2d51;
+            }
+        }
+        
+        .floating-hearts {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .floating-heart {
+            position: absolute;
+            pointer-events: none;
+            animation: float 8s ease-in-out infinite;
+            color: #ff2d51;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(-100px) rotate(20deg);
+                opacity: 0.7;
+            }
+        }
+        
+        .date {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.6);
+            font-size: 16px;
+            z-index: 4;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles"></canvas>
+    
+    <div class="heart-container" id="heart-container"></div>
+    <div class="heart-text">我爱梁英慧</div>
+    <div class="sub-text">你是我生命中最美的相遇</div>
+    
+    <div class="floating-hearts" id="floating-hearts"></div>
+    <div class="date" id="current-date"></div>
+    
+    <script>
+        // 粒子爱心效果
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        
+        // 设置canvas大小为窗口大小
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // 显示当前日期
+        function updateDate() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', options);
+        }
+        updateDate();
+        
+        // 粒子类
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.originX = x;
+                this.originY = y;
+                this.color = color;
+                this.size = Math.random() * 4 + 2;
+                this.vx = Math.random() * 2 - 1;
+                this.vy = Math.random() * 2 - 1;
+                this.ease = Math.random() * 0.05 + 0.01;
+                this.angle = 0;
+                this.angleSpeed = Math.random() * 0.05;
+                this.distance = Math.random() * 30 + 15;
+                this.lightness = 70;
+            }
+            
+            update(mouse) {
+                // 回到原始位置的动画
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 150) {
+                    this.x += dx * 0.05;
+                    this.y += dy * 0.05;
+                } else {
+                    // 心跳效果
+                    const beat = Math.sin(Date.now() * 0.002) * 10;
+                    
+                    // 旋转效果
+                    this.angle += this.angleSpeed;
+                    
+                    // 呼吸光效
+                    this.lightness = 70 + Math.sin(Date.now() * 0.003) * 15;
+                    
+                    const targetX = this.originX + Math.cos(this.angle) * this.distance;
+                    const targetY = this.originY + Math.sin(this.angle) * this.distance + beat;
+                    
+                    this.x += (targetX - this.x) * this.ease;
+                    this.y += (targetY - this.y) * this.ease;
+                }
+            }
+            
+            draw() {
+                const [h, s] = this.color.match(/\d+/g);
+                ctx.fillStyle = `hsl(${h}, ${s}%, ${this.lightness}%)`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 添加发光效果
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = `hsla(${h}, ${s}%, ${this.lightness}%, 0.8)`;
+            }
+        }
+        
+        // 创建爱心形状的粒子
+        function createHeartParticles() {
+            const particles = [];
+            const heartSize = 180; // 增大了爱心尺寸
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2 - 50; // 上移爱心位置
+            
+            // 爱心形状参数方程
+            for (let i = 0; i < 800; i++) { // 增加了粒子数量
+                const t = Math.random() * Math.PI * 2;
+                const scale = Math.random() * 0.4 + 0.8;
+                
+                // 爱心参数方程
+                const x = 16 * Math.pow(Math.sin(t), 3);
+                const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+                
+                // 随机粉色系颜色
+                const hue = 330 + Math.random() * 30;
+                const saturation = 80 + Math.random() * 20;
+                
+                particles.push(new Particle(
+                    centerX + x * heartSize * 0.1 * scale,
+                    centerY + y * heartSize * 0.1 * scale,
+                    `${hue}, ${saturation}%`
+                ));
+            }
+            
+            return particles;
+        }
+        
+        let particles = createHeartParticles();
+        const mouse = { x: null, y: null };
+        
+        // 鼠标移动交互
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        
+        window.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            mouse.x = e.touches[0].clientX;
+            mouse.y = e.touches[0].clientY;
+        }, { passive: false });
+        
+        // 动画循环
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(particle => {
+                particle.update(mouse);
+                particle.draw();
+            });
+            
+            // 重置阴影效果
+            ctx.shadowBlur = 0;
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        // 创建漂浮的小爱心
+        function createFloatingHearts() {
+            const container = document.getElementById('floating-hearts');
+            const colors = ['#ff2d51', '#ff6b81', '#ff8fa3', '#ffb3c1', '#ffccd5'];
+            
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.className = 'floating-heart';
+                    heart.innerHTML = '❤';
+                    
+                    // 随机位置
+                    const x = Math.random() * window.innerWidth;
+                    const y = Math.random() * window.innerHeight * 0.5 + window.innerHeight * 0.5;
+                    
+                    // 随机大小
+                    const size = Math.random() * 25 + 15;
+                    
+                    // 随机颜色
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    heart.style.left = `${x}px`;
+                    heart.style.top = `${y}px`;
+                    heart.style.fontSize = `${size}px`;
+                    heart.style.color = color;
+                    heart.style.opacity = 0.7 + Math.random() * 0.3;
+                    
+                    // 随机动画延迟和持续时间
+                    const duration = 6 + Math.random() * 6;
+                    const delay = Math.random() * 8;
+                    
+                    heart.style.animationDuration = `${duration}s`;
+                    heart.style.animationDelay = `${delay}s`;
+                    
+                    container.appendChild(heart);
+                    
+                    // 动画结束后移除爱心
+                    setTimeout(() => {
+                        heart.remove();
+                    }, duration * 1000);
+                }, i * 300);
+            }
+        }
+        
+        // 持续创建漂浮爱心
+        function keepCreatingHearts() {
+            createFloatingHearts();
+            setTimeout(keepCreatingHearts, 3000);
+        }
+        
+        // 点击屏幕创建更多爱心
+        document.addEventListener('click', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            
+            // 创建爆炸效果
+            for (let i = 0; i < 50; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 2;
+                const hue = 330 + Math.random() * 30;
+                
+                particles.push(new Particle(
+                    e.clientX,
+                    e.clientY,
+                    `${hue}, 100%`
+                ));
+                
+                particles[particles.length - 1].vx = Math.cos(angle) * speed;
+                particles[particles.length - 1].vy = Math.sin(angle) * speed;
+                particles[particles.length - 1].ease = 0.1;
+                particles[particles.length - 1].distance = 0;
+                particles[particles.length - 1].size = Math.random() * 6 + 3;
+            }
+        });
+        
+        // 初始化
+        createFloatingHearts();
+        keepCreatingHearts();
+    </script>
+</body>
+</html>
